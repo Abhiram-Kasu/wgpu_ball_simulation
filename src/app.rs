@@ -8,6 +8,7 @@ use wgpu::{
 };
 use winit::{
     application::ApplicationHandler,
+    event::{ElementState, MouseButton},
     event_loop::{ActiveEventLoop, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::Window,
@@ -70,6 +71,9 @@ pub struct Params {
     max_velocity: f32,
     dt: f32,
     collision_softness: f32,
+    pointer_position: [f32; 2],
+    pointer_size: f32,
+    is_clicked: i32,
 }
 
 pub struct AppState {
@@ -389,6 +393,11 @@ impl App {
 
     fn update(&mut self) {
         if let Some(state) = self.state.as_mut() {
+            // Update params buffer on GPU with current params (for mouse position, click state, etc.)
+            state
+                .queue
+                .write_buffer(&state.params_buffer, 0, bytemuck::bytes_of(&state.params));
+
             // Run compute pass for simulation
             let mut command_encoder =
                 state
@@ -692,6 +701,9 @@ impl ApplicationHandler for App {
                 max_velocity: config.max_velocity,
                 dt: config.dt,
                 collision_softness: config.collision_softness,
+                pointer_position: config.pointer_position,
+                pointer_size: config.pointer_size,
+                is_clicked: config.is_clicked,
             },
         )));
     }
@@ -719,6 +731,37 @@ impl ApplicationHandler for App {
                 self.render();
                 if let Some(state) = &self.state {
                     state.window.request_redraw();
+                }
+            }
+            event::WindowEvent::MouseInput {
+                device_id: _,
+                state: mouse_state,
+                button: MouseButton::Left,
+            } => {
+                if let Some(state) = &mut self.state {
+                    state.params.is_clicked = match mouse_state {
+                        ElementState::Pressed => 1,
+                        ElementState::Released => 0,
+                    };
+                    println!("Mouse clicked: {}", state.params.is_clicked);
+                }
+            }
+            event::WindowEvent::CursorMoved {
+                device_id: _,
+                position,
+            } => {
+                if let Some(state) = &mut self.state {
+                    // state.params.pointer_position = [
+                    //     position.x as f32 / state.window.inner_size().width as f32,
+                    //     position.y as f32 / state.window.inner_size().height as f32,
+                    // ];
+                    state.params.pointer_position = [position.x as f32, position.y as f32];
+                    if state.params.is_clicked == 1 {
+                        println!(
+                            "Pointer at: {:?}, size: {}",
+                            state.params.pointer_position, state.params.pointer_size
+                        );
+                    }
                 }
             }
             _ => {}

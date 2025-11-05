@@ -17,6 +17,9 @@ pub struct SimulationConfig {
     pub max_velocity: f32,
     pub dt: f32,
     pub collision_softness: f32,
+    pub pointer_position: [f32; 2],
+    pub pointer_size: f32,
+    pub is_clicked: i32,
 }
 
 impl Default for SimulationConfig {
@@ -33,6 +36,9 @@ impl Default for SimulationConfig {
             max_velocity: 10.0,
             dt: 0.016,
             collision_softness: 0.5,
+            pointer_position: [0.0, 0.0],
+            pointer_size: 0.01,
+            is_clicked: 0,
         }
     }
 }
@@ -48,9 +54,12 @@ fn main() {
         gravity: [0.0, 10.0],
         restitution: 0.5,
         damping: 0.99,
-        max_velocity: 30.0,
+        max_velocity: 100.0,
         dt: 0.016,               // ~60 FPS timestep
         collision_softness: 0.5, // How much balls can compress (0.0 = hard, 1.0 = very soft)
+        pointer_position: [0.0, 0.0],
+        pointer_size: 100.0, // Radius in pixels for repulsion effect
+        is_clicked: 0,
     };
 
     let event_loop = EventLoop::new().expect("Failed to create event loop");

@@ -17,6 +17,9 @@ struct Params {
     max_velocity: f32,
     dt: f32,
     collision_softness: f32,
+    pointer_position: vec2<f32>,
+    pointer_size: f32,
+    is_clicked: i32,
 }
 
 @group(0) @binding(1) var<uniform> params: Params;
@@ -38,6 +41,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         return;
     }
 
+
+    //Apply pointer repulsion force
+    if params.is_clicked == 1 {
+        let delta_to_pointer = input_circles[index].position - params.pointer_position;
+        let distance_to_pointer = length(delta_to_pointer);
+
+        // Check if circle is within the pointer radius
+        if distance_to_pointer < params.pointer_size && distance_to_pointer > 0.0001 {
+            // Normalized direction away from pointer
+            let repulsion_dir = delta_to_pointer / distance_to_pointer;
+
+            // Force strength decreases with distance (inverse relationship)
+            // Closer to pointer = stronger force
+            let force_strength = (1.0 - distance_to_pointer / params.pointer_size) * 2000.0 * 2.0;
+
+            // Apply the repulsion force as an impulse
+            input_circles[index].velocity += repulsion_dir * force_strength * params.dt;
+        }
+    }
 
     //Apply gravity (acceleration)
 
